@@ -8,6 +8,7 @@ export default function Home() {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleGenerate = async (e: React.FormEvent) => {
@@ -15,6 +16,7 @@ export default function Home() {
     setLoading(true);
     setError(null);
     setPdfUrl(null);
+    setUploadedImageUrl(null);
 
     const formData = new FormData();
     formData.append("bust", bust.toString());
@@ -31,6 +33,7 @@ export default function Home() {
 
       const data = await res.json();
       setPdfUrl(`http://localhost:8000${data.pdf_url}`);
+      if (data.image_url) setUploadedImageUrl(`http://localhost:8000${data.image_url}`);
     } catch (err: any) {
       setError(err.message || "An error occurred");
     } finally {
@@ -117,8 +120,17 @@ export default function Home() {
         </div>
 
         {/* Right Side: Execution Canvas */}
-        <div className="w-full md:w-1/2 pt-10 md:pt-32 flex flex-col items-center">
-          <div className="w-full border-4 border-[#e0d5c1] bg-white p-6 rotate-1 hover:rotate-0 transition-transform duration-500 shadow-[8px_8px_0_rgba(139,90,43,0.15)] relative">
+        <div className="w-full md:w-1/2 pt-10 md:pt-32 flex flex-col items-center relative">
+          
+          {uploadedImageUrl && (
+            <div className="absolute -left-12 -top-4 md:-left-20 md:top-10 z-30 transform -rotate-12 bg-white p-2 pb-8 shadow-xl border border-neutral-200 w-32 md:w-48 transition-transform hover:rotate-0 hover:scale-110 duration-300">
+               <div className="absolute -top-3 shadow-sm left-1/2 -translate-x-1/2 w-4 h-4 bg-yellow-400 rounded-full border-2 border-yellow-500 z-20"></div>
+               <img src={uploadedImageUrl} alt="Reference" className="w-full h-auto object-cover grayscale sepia-[.5] mix-blend-multiply opacity-90" />
+               <p className="font-[family-name:var(--font-caveat)] text-center text-[#8b5a2b] mt-2 text-xl leading-none">Ref.</p>
+            </div>
+          )}
+
+          <div className="w-full border-4 border-[#e0d5c1] bg-white p-6 rotate-1 hover:rotate-0 transition-transform duration-500 shadow-[8px_8px_0_rgba(139,90,43,0.15)] relative z-20">
             
             {/* Push pin */}
             <div className="absolute -top-4 shadow-lg left-1/2 -translate-x-1/2 w-6 h-6 bg-red-800 rounded-full border-4 border-red-900 z-20">

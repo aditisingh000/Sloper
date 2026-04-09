@@ -1,5 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+import shutil
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uuid
@@ -18,6 +20,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+os.makedirs("uploads", exist_ok=True)
+app.mount("/api/uploads", StaticFiles(directory="uploads"), name="uploads")
+
 class Measurements(BaseModel):
     bust: float
     waist: float
@@ -27,6 +32,7 @@ class PatternResponse(BaseModel):
     status: str
     message: str
     pdf_url: str | None = None
+    image_url: str | None = None
 
 @app.get("/health")
 def health_check():
@@ -42,8 +48,15 @@ async def generate_pattern(
     Mock endpoint for Phase 1 MVP.
     Takes measurements and an image, returns a mock pattern generation status.
     """
-    if image:
+    image_url = None
+    if image and image.filename:
         print(f"Received image: {image.filename}")
+        file_extension = image.filename.split(".")[-1] if "." in image.filename else "jpg"
+        unique_filename = f"{uuid.uuid4()}.{file_extension}"
+        file_path = f"uploads/{unique_filename}"
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(image.file, buffer)
+        image_url = f"/api/uploads/{unique_filename}"
     
     print(f"Scaling geometry for Bust: {bust}, Waist: {waist}")
     
@@ -57,7 +70,8 @@ async def generate_pattern(
         pattern_id=mock_id,
         status="success",
         message="Created draft pattern using basic T-shirt block.",
-        pdf_url=f"/api/download/{mock_id}"
+        pdf_url=f"/api/download/{mock_id}",
+        image_url=image_url
     )
 
 @app.get("/api/download/{pattern_id}")
